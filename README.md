@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/23838751/README.md)
 # 复古蒸汽卡片机 (Steam-Printer V3.2)
 
 一个具有复古蒸汽朋克风格的交互式卡片生成器，可以创建精美的复古风格卡片并保存为图片。

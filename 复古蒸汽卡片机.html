@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复古蒸汽卡片机 V3.2 (完美布局版)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Dancing+Script:wght@700&family=Cinzel:wght@700&family=Rye&family=Abril+Fatface&family=Share+Tech+Mono&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --wood-dark: #2a1d15;
+            --wood-light: #4a3b2a;
+            --brass: #cba864;
+            --brass-shadow: #8a6e36;
+            --leather: #1a1a1a;
+            --bg-pattern: repeating-linear-gradient(45deg, #111 0px, #111 2px, #1a1a1a 2px, #1a1a1a 4px);
+        }
+
+        body {
+            margin: 0;
+            background-color: #0b0b0b;
+            background-image: var(--bg-pattern);
+            font-family: 'Special Elite', cursive;
+            overflow: hidden;
+            height: 100vh;
+            user-select: none;
+            color: #ddd;
+        }
+
+        /* 全局复古噪点滤镜 */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            background: 
+                radial-gradient(circle, transparent 50%, #000 100%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+
+        /* --- 顶部机械控制台 --- */
+        .console-wrapper {
+            position: fixed;
+            top: 60px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%;
+            max-width: 850px;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.9));
+        }
+
+        .console-body {
+            background: linear-gradient(to bottom, #3d3126, #251a12);
+            border: 4px solid var(--brass);
+            border-radius: 12px; 
+            /* 关键修改：增加底部 padding，防止按钮贴边 */
+            padding: 30px 40px 40px 40px; 
+            box-shadow: inset 0 0 60px rgba(0,0,0,0.9);
+            position: relative;
+            width: 100%;
+            box-sizing: border-box; /* 确保 padding 不会撑大整体宽度 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 装饰螺丝 */
+        .screw {
+            position: absolute;
+            width: 14px; height: 14px;
+            background: radial-gradient(circle at 40% 40%, #ddd, #555);
+            border-radius: 50%;
+            box-shadow: 1px 2px 2px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            z-index: 2;
+        }
+        .screw::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 10px; height: 2px; background: #333;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        .s-tl { top: 10px; left: 10px; }
+        .s-tr { top: 10px; right: 10px; }
+        .s-bl { bottom: 10px; left: 10px; }
+        .s-br { bottom: 10px; right: 10px; }
+
+        .title-plate {
+            background: #080808;
+            border: 1px solid var(--brass);
+            color: var(--brass);
+            font-family: 'IM Fell English SC', serif;
+            font-size: 1.4rem;
+            padding: 4px 20px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 8px var(--brass-shadow);
+            letter-spacing: 2px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.8);
+            border-radius: 2px;
+        }
+
+        .input-deck {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 70px;
+            background: #151515;
+            border: 1px solid #555;
+            border-bottom: 2px solid #777;
+            border-radius: 4px;
+            color: var(--brass);
+            font-family: 'Special Elite', monospace;
+            padding: 12px;
+            font-size: 1.1rem;
+            resize: none;
+            outline: none;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.9);
+            box-sizing: border-box; 
+        }
+        textarea::placeholder { color: #554433; }
+        textarea:focus { border-color: var(--brass); background: #1a1a1a; }
+
+        /* --- 选项区域 (Grid) --- */
+        .controls-grid {
+            display: grid;
+            /* 自适应列：如果屏幕够宽是5列，不够宽自动换行，防止挤压 */
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            width: 100%;
+            background: rgba(0,0,0,0.25);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-sizing: border-box;
+            margin-bottom: 20px; /* 与下方按钮拉开距离 */
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 0; /* 防止 grid item 溢出 */
+        }
+        .control-group label {
+            font-size: 0.75rem;
+            color: #999;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+            font-weight: bold;
+        }
+
+        select {
+            background-color: #222;
+            color: var(--brass);
+            border: 1px solid #555;
+            padding: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            border-radius: 3px;
+            cursor: pointer;
+            width: 100%; /* 填满格子 */
+            box-sizing: border-box;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+            font-family: 'Special Elite', cursive;
+        }
+        select:hover { border-color: var(--brass); background-color: #2a2a2a; }
+        select option { background-color: #222; color: #e0e0e0; padding: 10px; }
+
+        /* --- 打印按钮 (独立容器，不再受 Grid 限制) --- */
+        .print-lever-container {
+            width: 100%;
+            box-sizing: border-box;
+            /* 模拟一个独立的凹槽区域 */
+            background: rgba(0,0,0,0.3);
+            padding: 8px; 
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .print-lever-btn {
+            display: block;
+            width: 100%; /* 宽度跟随父容器 */
+            background: linear-gradient(to bottom, #7a2020, #420a0a);
+            border: 1px solid #912b2b;
+            color: #f0e6d2;
+            font-family: 'IM Fell English SC', serif;
+            font-size: 1.5rem;
+            padding: 14px;
+            cursor: pointer;
+            text-shadow: 2px 2px 0 #000;
+            box-shadow: 0 5px 0 #2b0505, 0 10px 20px rgba(0,0,0,0.6);
+            transition: all 0.1s;
+            border-radius: 4px;
+            letter-spacing: 3px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .print-lever-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 0 0 #2b0505, inset 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        /* --- 桌面区域 --- */
+        #desk {
+            width: 100%; height: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 卡片样式 */
+        .card-container {
+            position: absolute;
+            width: 340px;
+            min-height: 220px;
+            padding: 40px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            cursor: grab;
+            transition: box-shadow 0.2s;
+            box-shadow: 2px 5px 15px rgba(0,0,0,0.5);
+            transform-origin: center center;
+        }
+        .card-container:active {
+            cursor: grabbing;
+            box-shadow: 10px 30px 50px rgba(0,0,0,0.6);
+            z-index: 9999 !important;
+        }
+
+        /* 材质 */
+        .paper-parchment { background: #e8dcc5; color: #2a1d15; }
+        .paper-kraft { background: #cba87c; border: 1px solid #a3825a; color: #1a0f00;}
+        .paper-blueprint { background: #1c3c5e; color: #fff !important; border: 2px solid rgba(255,255,255,0.3);}
+        .paper-news { background: #f2eecb; filter: sepia(0.4); color: #111; }
+        .paper-dark { background: #151515; color: #cba864 !important; border: 1px solid #333; }
+
+        /* 字体 */
+        .font-typewriter { font-family: 'Special Elite', monospace; }
+        .font-hand { font-family: 'Dancing Script', cursive; font-size: 1.5em; }
+        .font-gothic { font-family: 'IM Fell English SC', serif; font-size: 1.2em; }
+        .font-western { font-family: 'Rye', serif; font-size: 1.2em;}
+        .font-poster { font-family: 'Abril Fatface', cursive; font-size: 1.3em; letter-spacing: 1px; }
+        .font-tech { font-family: 'Share Tech Mono', monospace; font-size: 1.1em; }
+
+        /* 边框 */
+        .border-none { border: none; }
+        .border-double { border: 4px double currentColor; outline: 1px solid currentColor; outline-offset: 4px; }
+        .border-frame { border: 8px solid currentColor; border-radius: 4px; }
+        .border-stamp { border: 2px dashed currentColor; padding: 35px; } 
+
+        /* 印章 */
+        .stamp-mark {
+            position: absolute;
+            bottom: 15px; right: 15px;
+            width: 90px; height: 90px;
+            border: 4px solid;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Special Elite', monospace;
+            font-weight: bold; font-size: 14px;
+            text-transform: uppercase;
+            transform: rotate(-25deg);
+            opacity: 0.7;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+        }
+        .paper-dark .stamp-mark, .paper-blueprint .stamp-mark { mix-blend-mode: normal; opacity: 0.9; }
+
+        /* 工具栏 */
+        .toolbar {
+            position: fixed; bottom: 30px; right: 30px;
+            display: flex; gap: 20px; z-index: 200;
+        }
+        .tool-btn {
+            width: 65px; height: 65px;
+            border-radius: 50%; border: 2px solid #222;
+            background: radial-gradient(circle at 30% 30%, var(--brass), var(--brass-shadow));
+            box-shadow: 0 8px 15px rgba(0,0,0,0.6);
+            cursor: pointer; font-size: 26px;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s;
+        }
+        .tool-btn:hover { transform: scale(1.1); filter: brightness(1.2); }
+        
+        .save-card-btn {
+            position: absolute; top: -12px; right: -12px;
+            width: 32px; height: 32px;
+            background: #eee; color: #000;
+            border-radius: 50%; border: 2px solid #000;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; opacity: 0;
+            transition: opacity 0.2s; z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .card-container:hover .save-card-btn { opacity: 1; }
+
+        @keyframes dropIn {
+            0% { transform: translateY(-50vh) rotate(0deg) scale(0.5); opacity: 0; }
+            70% { transform: translateY(20px) rotate(var(--rot)) scale(1.1); opacity: 1; }
+            100% { transform: translateY(0) rotate(var(--rot)) scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay"></div>
+
+    <div class="console-wrapper">
+        <div class="console-body">
+            <div class="screw s-tl"></div><div class="screw s-tr"></div>
+            <div class="screw s-bl"></div><div class="screw s-br"></div>
+            
+            <div class="title-plate">Steam-Printer V3.2</div>
+
+            <div class="input-deck">
+                <textarea id="textInput" placeholder="请输入您的留言 (Type Message)..."></textarea>
+            </div>
+
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label>材质 (Paper)</label>
+                    <select id="paper">
+                        <option value="paper-parchment">羊皮纸 (Parchment)</option>
+                        <option value="paper-kraft">牛皮纸 (Kraft)</option>
+                        <option value="paper-blueprint">蓝图 (Blueprint)</option>
+                        <option value="paper-news">旧报纸 (News)</option>
+                        <option value="paper-dark">黑卡 (Dark Card)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>字体 (Font)</label>
+                    <select id="font">
+                        <option value="font-western">西部 (Western)</option>
+                        <option value="font-typewriter">打字机 (Typewriter)</option>
+                        <option value="font-hand">手写体 (Script)</option>
+                        <option value="font-gothic">哥特 (Gothic)</option>
+                        <option value="font-poster">海报 (Poster)</option>
+                        <option value="font-tech">代码 (Tech)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>墨水 (Ink)</label>
+                    <select id="ink">
+                        <option value="#2a1d15">深褐 (Dark Brown)</option>
+                        <option value="#000000">纯黑 (Black)</option>
+                        <option value="#8b0000">血红 (Blood Red)</option>
+                        <option value="#191970">海军蓝 (Navy)</option>
+                        <option value="#d4af37">金漆 (Gold)</option>
+                        <option value="#ffffff">粉笔白 (White)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>边框 (Border)</label>
+                    <select id="border">
+                        <option value="border-frame">加厚相框</option>
+                        <option value="border-double">复古双线</option>
+                        <option value="border-stamp">虚线边框</option>
+                        <option value="border-none">无边框</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>印章 (Stamp)</label>
+                    <select id="stamp">
+                        <option value="">(空)</option>
+                        <option value="TOP SECRET">绝密 (Secret)</option>
+                        <option value="URGENT">加急 (Urgent)</option>
+                        <option value="APPROVED">通过 (Approved)</option>
+                        <option value="VINTAGE">典藏 (Vintage)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="print-lever-container">
+                <button class="print-lever-btn" onclick="printCard()">⚡ 启动印刷 (PRINT) ⚡</button>
+            </div>
+            
+        </div>
+    </div>
+
+    <div id="desk"></div>
+
+    <div class="toolbar">
+        <button class="tool-btn" onclick="saveDesk()" title="保存全景">📷</button>
+        <button class="tool-btn" onclick="clearDesk()" title="清空桌面" style="background:#8f2626; color:white;">🗑️</button>
+    </div>
+
+    <script>
+        const desk = document.getElementById('desk');
+        const textInput = document.getElementById('textInput');
+        let zIndexCounter = 100;
+
+        function printCard() {
+            const text = textInput.value;
+            if (!text.trim()) {
+                textInput.placeholder = "请先输入文字...";
+                setTimeout(() => textInput.placeholder = "请输入您的留言 (Type Message)...", 1000);
+                return;
+            }
+
+            const paper = document.getElementById('paper').value;
+            const font = document.getElementById('font').value;
+            const ink = document.getElementById('ink').value;
+            const border = document.getElementById('border').value;
+            const stampText = document.getElementById('stamp').value;
+
+            // 创建卡片
+            const card = document.createElement('div');
+            card.className = `card-container ${paper} ${font} ${border}`;
+            card.style.color = ink;
+            card.style.borderColor = ink; 
+            
+            if(paper === 'paper-blueprint') {
+                card.style.borderColor = 'rgba(255,255,255,0.5)';
+            } else if (paper === 'paper-dark') {
+                card.style.borderColor = '#444';
+            }
+
+            const p = document.createElement('p');
+            p.innerText = text;
+            p.style.width = "100%";
+            p.style.margin = "0";
+            p.style.pointerEvents = "none";
+            p.style.whiteSpace = "pre-wrap";
+            card.appendChild(p);
+
+            if (stampText) {
+                const stamp = document.createElement('div');
+                stamp.className = 'stamp-mark';
+                stamp.innerText = stampText;
+                const colors = ['#b22222', '#8b0000', '#228b22', '#4b0082'];
+                const color = colors[Math.floor(Math.random()*colors.length)];
+                stamp.style.color = color;
+                stamp.style.borderColor = color;
+                card.appendChild(stamp);
+            }
+
+            const saveBtn = document.createElement('div');
+            saveBtn.className = 'save-card-btn';
+            saveBtn.innerHTML = '💾';
+            saveBtn.onclick = (e) => {
+                e.stopPropagation();
+                saveElement(card, 'retro-card.png');
+            };
+            card.appendChild(saveBtn);
+
+            const deskRect = desk.getBoundingClientRect();
+            const randomX = (window.innerWidth / 2 - 170) + (Math.random() * 300 - 150);
+            const randomY = (window.innerHeight / 2) + (Math.random() * 100 - 50);
+            const rot = Math.random() * 20 - 10;
+
+            card.style.left = `${randomX}px`;
+            card.style.top = `${randomY}px`;
+            card.style.setProperty('--rot', `${rot}deg`);
+            card.style.zIndex = zIndexCounter++;
+
+            card.style.animation = 'dropIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+
+            desk.appendChild(card);
+            initDrag(card);
+        }
+
+        function initDrag(el) {
+            let isDown = false;
+            let startX, startY, initialLeft, initialTop;
+            
+            el.addEventListener('mousedown', (e) => {
+                if(e.target.classList.contains('save-card-btn')) return;
+                isDown = true;
+                el.style.zIndex = ++zIndexCounter;
+                el.style.transition = 'none';
+                startX = e.clientX;
+                startY = e.clientY;
+                initialLeft = el.offsetLeft;
+                initialTop = el.offsetTop;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                const rot = dx * 0.05; 
+                el.style.transform = `rotate(${rot}deg)`;
+                el.style.left = `${initialLeft + dx}px`;
+                el.style.top = `${initialTop + dy}px`;
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isDown) {
+                    isDown = false;
+                    const finalRot = Math.random() * 6 - 3;
+                    el.style.transition = 'transform 0.3s ease-out';
+                    el.style.transform = `rotate(${finalRot}deg)`;
+                }
+            });
+        }
+
+        function saveElement(element, fileName) {
+            const btn = element.querySelector('.save-card-btn');
+            if(btn) btn.style.display = 'none';
+            html2canvas(element, { backgroundColor: null, scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = canvas.toDataURL();
+                link.click();
+                if(btn) btn.style.display = 'flex';
+            });
+        }
+
+        function saveDesk() {
+            const uiElements = document.querySelectorAll('.console-wrapper, .toolbar, .save-card-btn');
+            uiElements.forEach(el => el.style.display = 'none');
+            
+            html2canvas(document.body, {
+                scale: 1,
+                width: window.innerWidth,
+                height: window.innerHeight,
+                backgroundColor: '#0b0b0b'
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'steampunk-desk.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                uiElements.forEach(el => el.style.display = '');
+                document.querySelectorAll('.save-card-btn').forEach(b => b.style.display = 'flex');
+            });
+        }
+
+        function clearDesk() {
+            if(confirm("清空桌面？")) desk.innerHTML = '';
+        }
+    </script>
+</body>
+</html>
